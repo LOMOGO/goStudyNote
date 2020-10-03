@@ -14,6 +14,7 @@ func main()  {
 	//内置的make函数可以创建一个map：
 	m1 := make(map[string]int)
 	m1["alice"] = 31
+	m1["pop"] = 13
 	m1["bob"] = 34
 	//我们也可以通过map字面值的语法来创建map，同时还可以指定一些最初的key/value，这等价于上面的写法。
 	_ = map[string]int{
@@ -72,6 +73,18 @@ func main()  {
 		fmt.Println(value)
 	}
 	fmt.Println(equal(map[string]int{"a":0}, map[string]int{"b":42}))
+
+	//测试修改map
+	fixMap(m1)
+	fmt.Println(m1)
+
+	//测试修改[]slice
+	s := make([]string, 0, 20)
+	s = []string{"432", "gsjl"}
+	fmt.Println(s)
+	fixSlice(s)
+	fmt.Println(s)
+
 }
 
 //和slice一样，map之间也不能进行相等比较；唯一的例外就是和nil进行比较。但我们可以通过以下函数来判断两个map是否相等
@@ -89,4 +102,16 @@ func equal(x, y map[string]int) bool {
 		}*/
 	}
 	return true
+}
+
+func fixMap(m map[string]int) map[string]int {
+	m["pop"] = 14
+	return m
+}
+
+func fixSlice(s []string) []string {
+	s[0] = "sdfjs"
+	//fixSlice传递的是s的指针变量，因此第一个s[0]修改操作是成功的，append操作没有成功的原因是append返回的可能是一个新的地址的指针，因此失效，正确的写法是使用指针
+	s = append(s, "ertw")
+	return s
 }
