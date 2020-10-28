@@ -1,0 +1,73 @@
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/locales/zh"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	zh_trans "github.com/go-playground/validator/v10/translations/zh"
+	"net/http"
+	"reflect"
+	"time"
+)
+
+var trans ut.Translator
+
+type Booking struct {
+	CheckIn  time.Time `form:"check_in" json:"check_in" binding:"required,bookabledate" time_format:"2006-01-02" label:"输入时间"`
+	CheckOut time.Time `form:"check_out" json:"check_out" binding:"required,gtfield=CheckIn" time_format:"2006-01-02" label:"输出时间"`
+}
+
+func main() {
+	r := gin.Default()
+	uni := ut.New(zh.New())
+	trans, _ = uni.GetTranslator("zh")
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		//注册翻译器
+		_ = zh_trans.RegisterDefaultTranslations(v, trans)
+		//注册自定义函数
+		err := v.RegisterValidation("bookabledate", bookableDate)
+		if err != nil {
+			fmt.Println(err)
+		}
+		//注册一个函数，获取struct tag里自定义的label作为字段名
+		v.RegisterTagNameFunc(func(field reflect.StructField) string {
+			name := field.Tag.Get("label")
+			return name
+		})
+		//根据提供的标记注册翻译
+		v.RegisterTranslation("bookabledate", trans, func(ut ut.Translator) error {
+			return ut.Add("bookabledate", "{0}不能早于当前时间或{1}格式错误!", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("bookabledate", fe.Field(), fe.Field())
+			return t
+		})
+	}
+	r.GET("/bookable", getBookable)
+	r.Run(":8080")
+}
+
+func getBookable(c *gin.Context) {
+	var b Booking
+	if err := c.ShouldBindWith(&b, binding.Query); err == nil {
+		c.JSON(http.StatusOK, gin.H{"message": "预订日期有效！"})
+	} else {
+		errs := err.(validator.ValidationErrors)
+		fmt.Println(errs.Translate(trans))
+		c.JSON(http.StatusBadRequest, gin.H{"error":errs.Translate(trans)})
+	}
+}
+
+func bookableDate(fl validator.FieldLevel) bool {
+	date, ok := fl.Field().Interface().(time.Time)
+	if ok {
+		today := time.Now()
+		if today.After(date) {
+			return false
+		}
+	}
+	return true
+}
