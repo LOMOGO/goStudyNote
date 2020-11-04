@@ -12,7 +12,7 @@ func main() {
 	router.GET("/welcome", func(c *gin.Context) {
 		//如果get参数里面没有这个参数，那么就使用默认值 稀客
 		firstname := c.DefaultQuery("firstname", "稀客")
-		lastname := c.Query("lastname")
+		lastname := c.Query("lastname") // 是c.Request.URL.Query().Get("lastname")的简写
 
 		c.String(http.StatusOK, "欢迎%s%s",lastname, firstname)
 	})
