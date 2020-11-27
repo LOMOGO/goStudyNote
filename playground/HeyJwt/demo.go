@@ -11,8 +11,7 @@ import (
 var jwtKey = []byte("heyJwt")
 
 type Claims struct {
-	Software string
-	OS string
+	*ComputerInfo
 	jwt.StandardClaims
 }
 
@@ -33,7 +32,6 @@ func main() {
 func getToken(c *gin.Context)  {
 	info := ComputerInfo{}
 	err := c.BindJSON(&info)
-	c.JSON(200, info)
 	if err != nil {
 		log.Println("数据绑定失败：", err)
 		c.JSON(500, gin.H{
@@ -76,8 +74,7 @@ func CheckToken(c *gin.Context) {
 func (info *ComputerInfo)GenerateToken() (string, error) {
 	expireTime := time.Now().Add(7 * 24 * time.Hour)
 	claims := Claims{
-		Software: info.Software,
-		OS: info.OS,
+		ComputerInfo: info,
 		StandardClaims : jwt.StandardClaims{
 			ExpiresAt: expireTime.Unix(),
 			IssuedAt:  time.Now().Unix(),
